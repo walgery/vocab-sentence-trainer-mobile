@@ -270,6 +270,7 @@ def init_state() -> None:
         "gen_elapsed": "",  # 最近一次生成的耗时（秒），完成后填入
         "gen_result": None,  # 后台生成线程的结果容器（dict），生成中不为 None
         "gen_error": "",
+        "access_ok": False,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -803,8 +804,36 @@ def page_review() -> None:
             st.rerun()
 
 
+def _access_gate() -> bool:
+    """公网访问口令门：Secrets 的 [llm] 段配置 access_code 后启用。
+
+    未配置 access_code（含本地运行、无 Secrets）时不设防，行为不变。
+    """
+    code = ""
+    try:
+        code = str(st.secrets["llm"].get("access_code") or "").strip()
+    except Exception:
+        return True  # 本地无 Secrets：不设防
+    if not code:
+        return True
+    if st.session_state.access_ok:
+        return True
+    st.markdown('<div class="main-title">🔒 英语生词造句复习器</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-title">这是一个私人学习应用，请输入访问口令</div>', unsafe_allow_html=True)
+    pwd = st.text_input("访问口令", type="password", use_container_width=True)
+    if st.button("进入", type="primary", use_container_width=True):
+        if pwd == code:
+            st.session_state.access_ok = True
+            st.rerun()
+        else:
+            st.error("口令不正确，请重试")
+    return False
+
+
 def main() -> None:
     init_state()
+    if not _access_gate():
+        return
     settings = sidebar_settings()
 
     page = st.radio(
