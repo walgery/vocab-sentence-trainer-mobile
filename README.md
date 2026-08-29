@@ -1,1 +1,0 @@
-# vocab-sentence-trainer-mobile
