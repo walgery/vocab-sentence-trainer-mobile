@@ -300,12 +300,16 @@ def sidebar_settings() -> dict:
             "使用大模型造句",
             value=has_saved or bool(os.getenv("OPENAI_API_KEY") or os.getenv("LLM_API_KEY")),
         )
-        api_key = st.text_input(
+        has_key_saved = bool(saved_llm["api_key"])
+        api_key_input = st.text_input(
             "API 密钥",
-            value=saved_llm["api_key"] or os.getenv("OPENAI_API_KEY") or os.getenv("LLM_API_KEY") or "",
+            value="",  # 安全：不回填真实密钥到页面，防止公网访问者看到
             type="password",
             disabled=not use_llm,
+            placeholder=("已从服务器配置读取 ✓ 留空沿用" if has_key_saved else "输入密钥，或在云端 Secrets 配置"),
+            key="api_key_input",
         )
+        api_key = api_key_input.strip() or saved_llm["api_key"] or os.getenv("OPENAI_API_KEY") or os.getenv("LLM_API_KEY") or None
         base_url = st.text_input(
             "接口地址（可选）",
             value=saved_llm["base_url"] or os.getenv("OPENAI_BASE_URL") or os.getenv("LLM_BASE_URL") or "",
@@ -339,7 +343,12 @@ def sidebar_settings() -> dict:
 
         btn_col1, btn_col2 = st.columns(2)
         if btn_col1.button("保存配置", disabled=not use_llm, use_container_width=True):
-            save_llm_config(api_key.strip(), base_url.strip(), model.strip())
+            # 密钥留空 = 沿用已保存值，不覆盖
+            save_llm_config(
+                api_key_input.strip() or saved_llm["api_key"],
+                base_url.strip() or saved_llm["base_url"],
+                model.strip() or saved_llm["model"],
+            )
             st.toast("已保存，下次启动自动填入")
         if btn_col2.button("清除", disabled=not has_saved, use_container_width=True):
             try:
