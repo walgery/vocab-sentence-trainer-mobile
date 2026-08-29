@@ -829,7 +829,7 @@ def _access_gate() -> bool:
         return True
     st.markdown('<div class="main-title">🔒 英语生词造句复习器</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-title">这是一个私人学习应用，请输入访问口令</div>', unsafe_allow_html=True)
-    pwd = st.text_input("访问口令", type="password", use_container_width=True)
+    pwd = st.text_input("访问口令", type="password")
     if st.button("进入", type="primary", use_container_width=True):
         if pwd == code:
             st.session_state.access_ok = True
