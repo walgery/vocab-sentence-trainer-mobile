@@ -1,0 +1,10 @@
+[server]
+enableStaticServing = true
+headless = true
+
+[theme]
+base = "light"
+primaryColor = "#e05252"
+backgroundColor = "#f6f8fa"
+secondaryBackgroundColor = "#eef4f8"
+textColor = "#1a2330"

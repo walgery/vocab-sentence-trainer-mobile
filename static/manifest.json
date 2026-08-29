@@ -1,0 +1,26 @@
+{
+  "name": "英语生词造句复习器",
+  "short_name": "生词造句",
+  "description": "导入生词表，AI 批量造句，卡片式复习掌握",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f6f8fa",
+  "theme_color": "#1e3a4c",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
