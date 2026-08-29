@@ -236,19 +236,19 @@ def load_llm_config() -> tuple[dict, str]:
     except (OSError, ValueError):
         pass
     # 云端部署兜底：.streamlit/secrets.toml 中配置 [llm] api_key = "..."
+    # 注意：st.secrets["llm"] 返回 SectionProxy（非 dict 子类），不能用 isinstance 判断
     if not any(str(data.get(k) or "").strip() for k in ("api_key", "base_url", "model")):
         try:
-            sec = st.secrets.get("llm", {})
-            if isinstance(sec, dict):
-                for k in ("api_key", "base_url", "model"):
-                    if sec.get(k) and not str(data.get(k) or "").strip():
-                        data[k] = sec[k]
-                if any(str(data.get(k) or "").strip() for k in ("api_key", "base_url", "model")):
-                    source = "云端 Secrets ✓"
-                else:
-                    source = "Secrets 已存在但缺少 [llm] 段或字段为空"
+            sec = st.secrets["llm"]
+            for k in ("api_key", "base_url", "model"):
+                v = sec.get(k)
+                if v and not str(data.get(k) or "").strip():
+                    data[k] = v
+            source = "云端 Secrets ✓"
         except FileNotFoundError:
-            source = "未找到 Secrets（云端请在 Settings → Secrets 配置 [llm] 段）"
+            source = "未找到 Secrets（云端请在 Manage app → Settings → Secrets 配置 [llm] 段）"
+        except KeyError:
+            source = "Secrets 已存在但缺少 [llm] 段"
         except Exception as e:
             source = f"Secrets 解析失败：{type(e).__name__}: {e}"
     return {k: str(data.get(k) or "") for k in ("api_key", "base_url", "model")}, source
