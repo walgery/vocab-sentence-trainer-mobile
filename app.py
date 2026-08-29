@@ -220,27 +220,38 @@ st.markdown(UI_TRANSLATE_JS, unsafe_allow_html=True)
 LLM_CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "llm_config.json")
 
 
-def load_llm_config() -> dict:
-    """读取大模型配置：本地 llm_config.json 优先，其次云端 secrets（[llm] 段）。"""
+def load_llm_config() -> tuple[dict, str]:
+    """读取大模型配置：本地 llm_config.json 优先，其次云端 secrets（[llm] 段）。
+
+    返回 (配置字典, 配置来源描述)。来源描述用于界面自诊断。
+    """
     data: dict = {}
+    source = "无（未配置）"
     try:
         with open(LLM_CONFIG_FILE, encoding="utf-8") as f:
             loaded = json.load(f)
-        if isinstance(loaded, dict):
+        if isinstance(loaded, dict) and any(str(loaded.get(k) or "").strip() for k in ("api_key", "base_url", "model")):
             data = loaded
+            source = "本地 llm_config.json"
     except (OSError, ValueError):
         pass
     # 云端部署兜底：.streamlit/secrets.toml 中配置 [llm] api_key = "..."
     if not any(str(data.get(k) or "").strip() for k in ("api_key", "base_url", "model")):
         try:
-            secrets = st.secrets.get("llm", {})
-            if isinstance(secrets, dict):
+            sec = st.secrets.get("llm", {})
+            if isinstance(sec, dict):
                 for k in ("api_key", "base_url", "model"):
-                    if secrets.get(k) and not str(data.get(k) or "").strip():
-                        data[k] = secrets[k]
-        except Exception:
-            pass  # 本地无 secrets 文件属正常
-    return {k: str(data.get(k) or "") for k in ("api_key", "base_url", "model")}
+                    if sec.get(k) and not str(data.get(k) or "").strip():
+                        data[k] = sec[k]
+                if any(str(data.get(k) or "").strip() for k in ("api_key", "base_url", "model")):
+                    source = "云端 Secrets ✓"
+                else:
+                    source = "Secrets 已存在但缺少 [llm] 段或字段为空"
+        except FileNotFoundError:
+            source = "未找到 Secrets（云端请在 Settings → Secrets 配置 [llm] 段）"
+        except Exception as e:
+            source = f"Secrets 解析失败：{type(e).__name__}: {e}"
+    return {k: str(data.get(k) or "") for k in ("api_key", "base_url", "model")}, source
 
 
 def save_llm_config(api_key: str, base_url: str, model: str) -> None:
@@ -281,8 +292,9 @@ def sidebar_settings() -> dict:
 
         st.markdown("---")
         st.markdown("### 大模型（推荐）")
-        saved_llm = load_llm_config()
+        saved_llm, llm_source = load_llm_config()
         has_saved = bool(saved_llm["api_key"] or saved_llm["base_url"] or saved_llm["model"])
+        st.caption(f"配置来源：{llm_source}")
         use_llm = st.checkbox(
             "使用大模型造句",
             value=has_saved or bool(os.getenv("OPENAI_API_KEY") or os.getenv("LLM_API_KEY")),
